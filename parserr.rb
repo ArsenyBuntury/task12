@@ -1,36 +1,27 @@
-require 'open-uri'
+require 'curb'
 require 'nokogiri'
 require 'csv'
 
-
-main_category_page = Nokogiri::HTML(URI.open('https://www.petsonic.com/farmacia-para-gatos/'))
-
-
-all_products_url = []
-
-
-main_category_page.each do |product|
-  
-  @all_products_url << product.xpath('//link[@itemprop="url"]/@href')
-  
-  
-  
-end
+url = "https://www.petsonic.com/farmacia-para-gatos/"
+html = Curl.get(url)
+main_category_page = Nokogiri::HTML(html.body)
+all_products_url = main_category_page.xpath("//div/div/link[@itemprop='url']/@href")
 
 
-CSV.open('parsed.txt', "wb") do |csv_line|
+
+CSV.open('parsed.csv', "a") do |csv_line|
   csv_line << ['Название', 'Весовка', 'Цена']
 
   
   all_products_url.each do |product_url|
-    product_page = Nokogiri::HTML(open(product_url))
-    product_name = product_page.xpath('//h1[@class="product_main_name"]').to_s
+    html = Curl.get(product_url)
+    product_page = Nokogiri::HTML(html.body)
+    product_name = product_page.xpath('//h1[@class="product_main_name"]').text
     attribute_product_list = product_page.xpath('//div[@class="attribute_list"]')
-    binding.pry
     attribute_product_list.each do |attr|
-      product_variant = product_page.xpath('//span[@class="radio_label"]')
+      product_variant = product_page.xpath('//span[@class="radio_label"]').text
 
-      product_price = product_page.xpath('//span[@class="price_comb"]')
+      product_price = product_page.xpath('//span[@class="price_comb"]').text
       full_info = ["#{product_name}, #{product_variant}, #{product_price}"]
 
       csv_line << full_info
